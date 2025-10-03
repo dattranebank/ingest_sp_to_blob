@@ -10,7 +10,7 @@ app = func.FunctionApp()
 
 
 # Timer Trigger cập nhật
-@app.schedule(schedule="0 */10 * * * *", arg_name="myTimer", run_on_startup=True)
+@app.schedule(schedule="0 0 * * * *", arg_name="myTimer", run_on_startup=True)
 def copy_sp_to_blob(myTimer: func.TimerRequest) -> None:
 
     # Auth setup
@@ -49,6 +49,7 @@ def copy_sp_to_blob(myTimer: func.TimerRequest) -> None:
     # Upload từng file Excel lên Blob
     connection_string = os.environ["AzureWebJobsStorage"]
     container_name = os.environ["BLOB_CONTAINER_NAME"]  # Ví dụ: "sharepoint-files"
+    subfolder = os.environ.get("BLOB_SUBFOLDER", "")  # Ví dụ: dms/dms17
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     container_client = blob_service_client.get_container_client(container_name)
     
@@ -56,14 +57,21 @@ def copy_sp_to_blob(myTimer: func.TimerRequest) -> None:
         file_name = file_item["name"]
         download_url = file_item["@microsoft.graph.downloadUrl"]
         file_content = requests.get(download_url, headers=headers).content
-        
-        blob_client = container_client.get_blob_client(file_name)
+
+        # Nối subfolder + filename
+        if subfolder:
+            blob_path = f"{subfolder}/{file_name}"
+        else:
+            blob_path = file_name
+
+        blob_client = container_client.get_blob_client(blob_path)
+
         try:
             blob_client.upload_blob(file_content, overwrite=True)
-            logging.info(f"Uploaded Excel file: {file_name}")
+            logging.info(f"Uploaded Excel file to {blob_path}")
         except ResourceExistsError:
-            logging.info(f"File {file_name} already exists, skipping")
+            logging.info(f"File {blob_path} already exists, skipping")
         except Exception as e:
-            logging.error(f"Upload failed for {file_name}: {str(e)}")
+            logging.error(f"Upload failed for {blob_path}: {str(e)}")
     
     logging.info(f"Processed {len(excel_files)} Excel files from SharePoint folder: {folder_path}")
