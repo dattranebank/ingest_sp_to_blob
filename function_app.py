@@ -10,7 +10,7 @@ app = func.FunctionApp()
 
 
 # Timer Trigger cập nhật
-@app.schedule(schedule="0 0 * * * *", arg_name="myTimer", run_on_startup=True)
+@app.schedule(schedule="0 0 */8 * * *", arg_name="myTimer", run_on_startup=True)
 def copy_sp_to_blob(myTimer: func.TimerRequest) -> None:
 
     # Auth setup
