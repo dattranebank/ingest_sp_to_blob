@@ -8,12 +8,10 @@ from azure.core.exceptions import ResourceExistsError
 
 app = func.FunctionApp()
 
-
 # HTTP Trigger: gọi thủ công hoặc từ ADF
 @app.function_name(name="copy_sp_to_blob")
 @app.route(route="copy_sp_to_blob", methods=["POST"])
-def copy_sp_to_blob(myTimer: func.TimerRequest) -> None:
-
+def copy_sp_to_blob(req: func.HttpRequest) -> func.HttpResponse:
     # Auth setup
     client_id = os.environ["CLIENT_ID"]
     tenant_id = os.environ["TENANT_ID"]
